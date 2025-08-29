@@ -1,4 +1,4 @@
-Index,Bar,Type,Adresse,Code Postal,Quartier,Pays,Latitude,Longitude,Consommateur,Prix,Note,Commentaire AR,Commentaire VB,Latitude,Longitude,,
+Index,Bar,Type,Adresse,Code Postal,Quartier,Pays,Latitude,Longitude,Consommateur,Prix,Note,Commentaire AR,Commentaire VB,
 0,‘t Stopsel,,Kuregemstraat 18 1831 Diegem,1831,Diegem,Belgique,,,,,,,,,
 1,1030 Café,,"Jan Stobbaertslaan , 100 1030 Schaerbeek",1030,Schaerbeek,Belgique,,,,,,,,,
 2,123 rue Royale,,Rue Royale 123,1000,Bruxelles,Belgique,,,,,,,,,
@@ -500,4 +500,5 @@ Index,Bar,Type,Adresse,Code Postal,Quartier,Pays,Latitude,Longitude,Consommateur
 496,L'Autobus,Bar,"Pl. Jourdan 33, 1040 Etterbeek",1040,Etterbeek,Belgique,,,AR,2,3,,,,
 497,Perruche,Bistro,"Rue des Alliés 113, 1190 Forest",1190,Forest,Belgique,,,AR,2,3,,,,
 498,Beerstorming,Brasserie,"Chaussée d'Alsemberg 75, 1060 Saint-Gilles",1060,Saint-Gilles,Belgique,,,VB,2,4,,Microbrasserie sympatique,,
+
 
