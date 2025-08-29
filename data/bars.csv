@@ -1,5 +1,4 @@
-Unnamed: 0,Unnamed: 1,Mode d'emploi,Unnamed: 3,Unnamed: 4,Unnamed: 5,Unnamed: 6,Unnamed: 7,Unnamed: 8,Unnamed: 9,Unnamed: 10,Unnamed: 11,Unnamed: 12,Unnamed: 13,Latitude,Longitude
-Index,Bar,Type,Adresse,Code Postal,Quartier,Pays,Latitude,Longitude,Consommateur,Prix,Note,Commentaire AR,Commentaire VB,,
+Index,Bar,Type,Adresse,Code Postal,Quartier,Pays,Latitude,Longitude,Consommateur,Prix,Note,Commentaire AR,Commentaire VB,Latitude,Longitude,,
 0,‘t Stopsel,,Kuregemstraat 18 1831 Diegem,1831,Diegem,Belgique,,,,,,,,,
 1,1030 Café,,"Jan Stobbaertslaan , 100 1030 Schaerbeek",1030,Schaerbeek,Belgique,,,,,,,,,
 2,123 rue Royale,,Rue Royale 123,1000,Bruxelles,Belgique,,,,,,,,,
@@ -158,7 +157,8 @@ Index,Bar,Type,Adresse,Code Postal,Quartier,Pays,Latitude,Longitude,Consommateur
 155,Dekkera,,"Rue Pierre Decoster, 109 1190 Forest",1190,Forest,Belgique,,,,,,,,,
 156,Delirium Café,Bar,Impasse de la Fidélité 4A 1000 Bruxelles,1000,Bruxelles,Belgique,,,ALL,2,3,Un bar de légende. Un max de bières mais  un max de monde. Pour les touristes.,,,
 157,Dolle Mol,,Rue des Eperonniers 52,1000,Bruxelles,Belgique,,,,,,,,,
-158,"drinkdrink!",,"Rue Paepsem 123, 1070 Bruxelles",1070,Forest,Belgique,,,,,,,,,
+158,"drinkdrink!
+",,"Rue Paepsem 123, 1070 Bruxelles",1070,Forest,Belgique,,,,,,,,,
 159,Dynamo,,Chaussée d'Alsemberg 130,1060,Saint-Gilles,Belgique,,,,,,,,,
 160,Dzama Rhumerie Cocktail Lounge,,"Rue des Pigeons, 14 1000 Bruxelles",1000,Bruxelles,Belgique,,,,,,,,,
 161,Edgar’s Flavors,,"Rue de la Concorde, 63 1000 Bruxelles",1000,Bruxelles,Belgique,,,,,,,,,
@@ -500,3 +500,4 @@ Index,Bar,Type,Adresse,Code Postal,Quartier,Pays,Latitude,Longitude,Consommateur
 496,L'Autobus,Bar,"Pl. Jourdan 33, 1040 Etterbeek",1040,Etterbeek,Belgique,,,AR,2,3,,,,
 497,Perruche,Bistro,"Rue des Alliés 113, 1190 Forest",1190,Forest,Belgique,,,AR,2,3,,,,
 498,Beerstorming,Brasserie,"Chaussée d'Alsemberg 75, 1060 Saint-Gilles",1060,Saint-Gilles,Belgique,,,VB,2,4,,Microbrasserie sympatique,,
+
