@@ -173,3 +173,14 @@ input[type="range"]{accent-color:var(--accent)}
   transition:.2s ease;
 }
 .btn:hover{background:var(--accent); color:#0a0a0a; box-shadow:0 0 16px var(--accent)}
+
+/* =========================== BOUTON PULSANT =================== */
+
+.top-nav .btn{
+  animation: btnPulse 3s ease-in-out infinite;
+}
+@keyframes btnPulse{
+  0%  { box-shadow:0 0 0 rgba(0,245,212,0) }
+  60% { box-shadow:0 0 14px rgba(0,245,212,.35) }
+  100%{ box-shadow:0 0 0 rgba(0,245,212,0) }
+}
