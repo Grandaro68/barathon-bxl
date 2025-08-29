@@ -1,6 +1,6 @@
 # 🍺 Barathon des légendes BXL
 
-500 bars, 500 pintes, 2 légendes 🔥  
+500 bars, 1000 pintes, 2 légendes 🔥  
 Projet perso pour recenser et noter tous les bars de Bruxelles.
 
 👉 [Voir le site en ligne](https://grandaro68.github.io/barathon-bxl/)
