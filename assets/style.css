@@ -1,171 +1,145 @@
-/* ====== THEME BARATHON BXL — POP / BBP INSPIRED ====== */
-:root{
-  /* palette pop (jaune / magenta / cyan / noir) */
-  --ink:#0f0f14;
-  --bg:#0f0f14;                 /* fond noir bleuté profond */
-  --card:#121621;               /* cartes dark */
-  --muted:#9aa3b2;
-
-  --brand:#ff2e7a;              /* magenta punchy */
-  --brand-2:#00d4ff;            /* cyan */
-  --brand-3:#ffe500;            /* jaune */
-  --brand-4:#7d4dff;            /* violet */
-
-  --todo:#ffe500;               /* pins à faire */
-  --done:#00e38b;               /* pins visités */
-  --line:rgba(255,255,255,.08);
-  --ring:rgba(255,255,255,.18);
+/* ------------------ Base ------------------ */
+body {
+  margin: 0;
+  font-family: 'Space Grotesk', sans-serif;
+  background: #0a0a0a;
+  color: #fff;
 }
 
-*{box-sizing:border-box}
-html,body{margin:0;height:100%}
-body{
-  color:#fff;
-  background:
-    radial-gradient(1200px 800px at 80% -20%, rgba(255,46,122,.18), transparent 60%),
-    radial-gradient(900px 600px at -10% 20%, rgba(0,212,255,.18), transparent 55%),
-    radial-gradient(900px 600px at 110% 100%, rgba(255,229,0,.12), transparent 55%),
-    var(--bg);
-  font-family: "Space Grotesk", system-ui, -apple-system, Segoe UI, Roboto, Inter, Arial;
-  letter-spacing:.2px;
-}
-a{color:var(--brand);text-decoration:none}
-
-/* ====== HEADER ====== */
-.site-header{
-  position:sticky; top:0; z-index:20;
-  display:flex; justify-content:space-between; align-items:center;
-  padding:14px 18px; backdrop-filter: blur(8px);
-  background: linear-gradient(180deg, rgba(18,22,33,.8), rgba(18,22,33,.45));
-  border-bottom:1px solid var(--line);
-}
-.brand{display:flex; align-items:center; gap:.7rem}
-.brand .emoji{
-  display:grid; place-items:center;
-  width:36px; height:36px; border-radius:12px;
-  background:
-    radial-gradient(120% 120% at 0% 100%, var(--brand-3), transparent 66%),
-    linear-gradient(135deg, var(--brand), var(--brand-2));
-  box-shadow: 0 10px 24px rgba(255,46,122,.35), inset 0 0 0 1px rgba(255,255,255,.25);
-  font-size:18px;
-}
-.brand h1{
-  margin:0; color:#fff; letter-spacing:1px;
-  font-family:"Bebas Neue", system-ui; font-size:26px;
+h1, h2, h3 {
+  font-family: 'Bebas Neue', sans-serif;
+  letter-spacing: 1px;
+  color: #00f5d4;
+  margin: 0;
 }
 
-.top-nav a{ margin-left:.6rem }
-.btn{
-  display:inline-flex; align-items:center; gap:.5rem;
-  padding:.62rem .95rem; border-radius:14px; font-weight:700;
-  background:linear-gradient(180deg, #fff, #f5f5f5); color:#0f0f14;
-  box-shadow:0 8px 24px rgba(255,229,0,.24), inset 0 0 0 1px rgba(0,0,0,.1);
-  transition: transform .08s ease;
-}
-.btn:hover{ transform: translateY(-1px) }
-.btn.secondary{
-  background:linear-gradient(180deg, var(--ink), #1a2131);
-  color:#fff; box-shadow:0 10px 24px rgba(0,212,255,.25), inset 0 0 0 1px rgba(255,255,255,.08);
-}
-.btn.ghost{
-  background:transparent; color:#fff; border:1px dashed var(--ring);
-  box-shadow:none;
+/* ------------------ Header ------------------ */
+.site-header {
+  background: linear-gradient(135deg, #0a0a0a 60%, #00f5d4 60%);
+  padding: 1rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
-/* ====== HERO ====== */
-.hero{padding:28px 18px 10px}
-.hero h2{
-  margin:.2rem 0 .4rem;
-  font-family:"Bebas Neue"; font-size:48px; letter-spacing:1px;
-  background:linear-gradient(90deg, #fff, var(--brand-2));
-  -webkit-background-clip:text; background-clip:text; color:transparent;
-}
-.hero p{color:var(--muted); font-weight:600}
-
-/* ====== CONTROLS ====== */
-.controls{padding:8px 18px}
-.filters{display:flex; flex-wrap:wrap; gap:.9rem; align-items:center}
-.filters label{display:inline-flex; align-items:center; gap:.4rem; font-weight:700}
-.filters input[type="range"]{ accent-color: var(--brand-2) }
-.filters input[type="search"]{
-  flex:1; min-width:230px; height:40px;
-  padding:.6rem .8rem; border-radius:12px;
-  border:1px solid var(--ring); background:rgba(255,255,255,.04); color:#fff;
-  outline:none;
-}
-.filters input[type="search"]::placeholder{ color:#93a2b7 }
-
-.progress{display:flex; align-items:center; gap:1rem; margin-top:10px}
-.progress .bar{
-  flex:1; height:10px; border-radius:999px; overflow:hidden;
-  background:linear-gradient(90deg, rgba(255,255,255,.08), rgba(255,255,255,.02));
-  box-shadow: inset 0 0 0 1px var(--ring);
-}
-#barFill{
-  height:100%; width:0;
-  background:linear-gradient(90deg, var(--brand-3), var(--done));
+.site-header .brand h1 {
+  font-size: 2rem;
+  color: #fff;
+  text-shadow: 0 0 8px #00f5d4;
 }
 
-/* ====== LAYOUT ====== */
-.layout{display:grid; grid-template-columns:1fr; gap:14px; padding:0 18px 18px}
-#map{
-  height:68vh; border-radius:18px;
-  border:1px solid var(--line); background:#0b0e18;
-  box-shadow: 0 20px 40px rgba(0,0,0,.35), 0 0 0 6px rgba(255,255,255,.02) inset;
+.top-nav a {
+  margin-left: 1rem;
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  text-decoration: none;
+  color: #fff;
+  background: transparent;
+  border: 2px solid #00f5d4;
+  transition: 0.3s;
 }
-.panel{
-  background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.02));
-  border:1px solid var(--line); border-radius:18px; padding:16px;
-  box-shadow: 0 10px 30px rgba(0,0,0,.35);
-}
-.panel .muted{color:var(--muted)}
-.panel .chips{display:flex; flex-wrap:wrap; gap:.5rem; margin:.7rem 0}
-.panel .chips .chip{
-  padding:.28rem .6rem; border-radius:999px; font-weight:700; font-size:.86rem;
-  background: rgba(0,212,255,.07);
-  border:1px solid rgba(0,212,255,.25);
-}
-.ratingBox{display:flex; align-items:center; gap:.35rem; font-weight:800}
-.ratingBox .star{color:var(--brand-3); filter: drop-shadow(0 0 12px rgba(255,229,0,.55));}
-.actions{margin-top:1rem}
-
-.site-footer{
-  padding:24px 18px; text-align:center; color:var(--muted);
-  border-top:1px solid var(--line);
+.top-nav a:hover {
+  background: #00f5d4;
+  color: #0a0a0a;
+  box-shadow: 0 0 12px #00f5d4;
 }
 
-/* ====== LEAFLET SKIN ====== */
-.leaflet-container{font-family:inherit; color:#111}
-.leaflet-control-zoom a{
-  background:#0f0f14; color:#fff; border:1px solid var(--ring); border-radius:10px;
+/* ------------------ Hero ------------------ */
+.hero {
+  text-align: center;
+  padding: 2rem 1rem;
+  background: repeating-linear-gradient(
+    -45deg,
+    #0a0a0a,
+    #0a0a0a 20px,
+    #111 20px,
+    #111 40px
+  );
+  border-bottom: 4px solid #00f5d4;
 }
-.leaflet-popup-content-wrapper, .leaflet-popup-tip{
-  background:#0f1320; color:#fff; border:1px solid var(--line);
+.hero h2 {
+  font-size: 2.5rem;
+  color: #00f5d4;
+  text-shadow: 0 0 12px #00f5d4;
 }
-
-/* Pins néon */
-.marker-todo, .marker-done{
-  width:16px; height:16px; border-radius:50%;
-  border:2px solid #0f0f14;
-}
-.marker-todo{
-  background: var(--todo);
-  box-shadow: 0 0 0 2px rgba(255,229,0,.45), 0 0 18px rgba(255,229,0,.45);
-}
-.marker-done{
-  background: var(--done);
-  box-shadow: 0 0 0 2px rgba(0,227,139,.4), 0 0 18px rgba(0,227,139,.42);
-}
-
-/* ====== DESKTOP ====== */
-@media(min-width:980px){
-  .layout{ grid-template-columns: 1.6fr .9fr }
-  #map{ height:78vh }
+.hero p {
+  color: #ccc;
+  font-size: 1.1rem;
 }
 
-/* ====== UTILS ====== */
-.hidden{display:none}
-.panel-empty{color:var(--muted); display:flex; align-items:center; gap:.6rem}
-.panel-empty:before{
-  content:"📂"; font-size:18px; opacity:.9
+/* ------------------ Controls ------------------ */
+.controls {
+  background: #111;
+  padding: 1rem;
+  border-bottom: 2px solid #00f5d4;
 }
+
+.filters label {
+  margin-right: 1rem;
+}
+
+input[type="range"] {
+  accent-color: #00f5d4;
+}
+
+.progress {
+  margin-top: 0.5rem;
+}
+.progress .bar {
+  background: #333;
+  border-radius: 4px;
+  height: 8px;
+  overflow: hidden;
+}
+#barFill {
+  background: #00f5d4;
+  width: 0;
+  height: 100%;
+  transition: width 0.4s ease;
+}
+
+/* ------------------ Map ------------------ */
+#map {
+  flex: 1;
+  height: 80vh;
+}
+
+.leaflet-popup-content-wrapper {
+  background: #0a0a0a;
+  color: #fff;
+  border: 2px solid #00f5d4;
+}
+.leaflet-popup-tip {
+  background: #0a0a0a;
+  border: 2px solid #00f5d4;
+}
+
+/* ------------------ Panel ------------------ */
+.panel {
+  background: #111;
+  padding: 1rem;
+  border-left: 2px solid #00f5d4;
+  color: #fff;
+}
+.panel h3 {
+  color: #00f5d4;
+}
+.chip {
+  display: inline-block;
+  background: #00f5d4;
+  color: #0a0a0a;
+  border-radius: 12px;
+  padding: 0.2rem 0.6rem;
+  margin: 0.2rem;
+  font-size: 0.8rem;
+}
+
+/* ------------------ Footer ------------------ */
+.site-footer {
+  text-align: center;
+  padding: 1rem;
+  background: #0a0a0a;
+  border-top: 2px solid #00f5d4;
+  color: #888;
+}
+
