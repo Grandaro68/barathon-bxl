@@ -82,10 +82,11 @@
   <!-- App -->
   <script>
     window.BARATHON_CONFIG = {
-      dataUrl: './data/bars.csv', // ton CSV avec lat/lng déjà remplis
-      geocode: false              // plus besoin de Nominatim côté client
+      dataUrl: './data/bars.csv?v=2',  // <- ajoutez ?v=2
+      geocode: false
     };
   </script>
   <script src="./assets/app.js"></script>
 </body>
 </html>
+
