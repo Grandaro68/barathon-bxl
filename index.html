@@ -78,16 +78,14 @@
   <script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+
   <!-- App -->
-<script>
-  window.BARATHON_CONFIG = {
-    dataUrl: './data/bars.csv',
-    geocode: false
-  };
-</script>
-<script src="./assets/app.js"></script>
+  <script>
+    window.BARATHON_CONFIG = {
+      dataUrl: './data/bars.csv', // ton CSV avec lat/lng déjà remplis
+      geocode: false              // plus besoin de Nominatim côté client
+    };
+  </script>
+  <script src="./assets/app.js"></script>
 </body>
 </html>
-
-
-
