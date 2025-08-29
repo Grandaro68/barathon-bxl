@@ -1,9 +1,9 @@
 /* global L, Papa, BARATHON_CONFIG */
-// Barathon BXL — parsing FR + géocodage Nominatim + cache localStorage
+// Barathon BXL — parsing FR + géocodage Nominatim (qualité) + cache
 
 (async function () {
   const cfg = Object.assign(
-    { geocode: true, geocodeLimitPerLoad: 120, geocodeDelayMs: 600 },
+    { geocode: true, geocodeLimitPerLoad: 200, geocodeDelayMs: 650 },
     window.BARATHON_CONFIG || {}
   );
 
@@ -25,18 +25,31 @@
     return undefined;
   }
 
-  // number FR/EN + artefacts -> Number
+  // nombre FR/EN + artefacts -> Number
   function toNum(v) {
     if (v === null || v === undefined) return NaN;
     if (typeof v === "number") return v;
     let s = String(v).trim();
-
-    // cas tordu "4.3461448,556" -> on prend la partie avant la virgule additionnelle
+    // cas tordu "4.3461448,556" -> on garde la partie avant la virgule résiduelle
     if (/^\d+(\.\d+)?,\d+$/.test(s)) s = s.split(",")[0];
-
     s = s.replace(/\s/g, "").replace(",", ".");
     const n = Number(s);
     return Number.isFinite(n) ? n : NaN;
+  }
+
+  // distance approx (m) depuis bbox Nominatim pour filtrer les résultats "trop larges"
+  function bboxDiagMeters(bbox) {
+    // bbox: [south, north, west, east]
+    if (!bbox || bbox.length !== 4) return Infinity;
+    const [s, n, w, e] = bbox.map(Number);
+    const R = 6371000;
+    const toRad = (d) => (d * Math.PI) / 180;
+    const dLat = toRad(n - s);
+    const dLon = toRad(e - w);
+    // approx plate carrée
+    return Math.sqrt(
+      Math.pow(R * dLat, 2) + Math.pow(R * Math.cos(toRad((n + s) / 2)) * dLon, 2)
+    );
   }
 
   // ---------- Map ----------
@@ -91,8 +104,8 @@
   function openPanel(d) {
     $panel.querySelector(".panel-empty").classList.add("hidden");
     $pContent.classList.remove("hidden");
-    $pName.textContent = d.name;
-    $pAddress.textContent = d.address;
+    $pName.textContent = d.name || "(Bar sans nom)";
+    $pAddress.textContent = d.address || "";
     renderTags(d.tags, d);
     $pRating.textContent = d.rating ? d.rating.toFixed(1) : "—";
     $pComment.textContent = d.comment || "—";
@@ -123,7 +136,7 @@
 
   function addMarker(d) {
     const icon = d.visited ? mkIcon("marker-done") : mkIcon("marker-todo");
-    const m = L.marker([d.lat, d.lng], { icon, title: d.name });
+    const m = L.marker([d.lat, d.lng], { icon, title: d.name || "" });
     m.on("click", () => openPanel(d));
     (d.visited ? clusterDone : clusterTodo).addLayer(m);
   }
@@ -131,7 +144,10 @@
   function refresh() {
     clusterTodo.clearLayers();
     clusterDone.clearLayers();
-    data.filter((d) => Number.isFinite(d.lat) && Number.isFinite(d.lng)).filter(matchesFilters).forEach(addMarker);
+    data
+      .filter((d) => Number.isFinite(d.lat) && Number.isFinite(d.lng))
+      .filter(matchesFilters)
+      .forEach(addMarker);
 
     if ($todo.checked) map.addLayer(clusterTodo);
     else map.removeLayer(clusterTodo);
@@ -154,22 +170,19 @@
   const text = await res.text();
   const parsed = Papa.parse(text, { header: true, dynamicTyping: false, skipEmptyLines: true });
 
-  let rows = parsed.data;
-
-  // mapping table -> modèle
-  let data = rows.map((r, i) => {
-    const name = pick(r, "Bar", "Nom");
+  // mapping table -> modèle interne
+  let data = parsed.data.map((r, i) => {
+    const name = (pick(r, "Bar", "Nom") || "").toString().trim();
     const type = pick(r, "Type");
-    const adresse = pick(r, "Adresse", "Address");
-    const cp = pick(r, "Code Postal", "CP");
+    const adresse = (pick(r, "Adresse", "Address") || "").toString().trim();
+    const cp = (pick(r, "Code Postal", "CP") || "").toString().trim();
     const quartier = pick(r, "Quartier");
-    const pays = pick(r, "Pays", "Country");
+    const pays = pick(r, "Pays") || "Belgique";
 
-    // coords (gère formats FR/artefacts)
     let lat = toNum(pick(r, "Latitude", "Lat"));
     let lng = toNum(pick(r, "Longitude", "Lng", "Lon"));
 
-    const consommateur = pick(r, "Consommateur"); // AR / VB / ALL
+    const consommateur = pick(r, "Consommateur");
     const prix = toNum(pick(r, "Prix"));
     const note = toNum(pick(r, "Note"));
     const comAR = (pick(r, "Commentaire AR") || "").toString().trim();
@@ -186,18 +199,26 @@
       Number.isFinite(prix) ? "€".repeat(Math.max(1, Math.min(4, prix))) : "",
     ].filter(Boolean);
 
-    const comment = [comAR && `AR : ${comAR}`, comVB && `VB : ${comVB}`].filter(Boolean).join("  •  ");
-    const addrStr = [name, adresse, cp, quartier, "Bruxelles", pays || "Belgique"].filter(Boolean).join(" ");
-    const gmaps = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addrStr)}`;
+    const comment = [comAR && `AR : ${comAR}`, comVB && `VB : ${comVB}`]
+      .filter(Boolean)
+      .join("  •  ");
+
+    // Meilleur "query" pour le géocode (on insiste sur CP + Bruxelles)
+    const city = /brux/i.test(adresse) || /brux/i.test(quartier || "") ? "" : "Bruxelles";
+    const addrStr = [name, adresse, cp, quartier, city, pays].filter(Boolean).join(" ");
+    const addrStrLite = [adresse, cp, city, pays].filter(Boolean).join(" ");
+    const gmaps = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+      [name || adresse, cp, "Bruxelles", pays].filter(Boolean).join(" ")
+    )}`;
 
     return {
       id: i + 1,
-      name: name?.toString().trim() || "(Bar sans nom)",
+      name: name || adresse || "(Bar sans nom)",
       type,
-      address: adresse || "",
+      address: adresse,
       cp,
       quartier,
-      pays: pays || "Belgique",
+      pays,
       lat,
       lng,
       consommateur,
@@ -208,81 +229,124 @@
       comment,
       visited_at: "",
       gmaps,
-      _query: addrStr, // pour géocodage
+      _queries: [addrStr, addrStrLite], // tentatives
     };
   });
 
-  // ---------- Geocoding (lazy + cache) ----------
-  const cacheKey = "barathon_geoCache_v1";
+  // ---------- Geocoding (qualité + cache) ----------
+  const cacheKey = "barathon_geoCache_v2";
   const geoCache = JSON.parse(localStorage.getItem(cacheKey) || "{}");
 
-  async function geocodeOne(q) {
+  function acceptGeo(result) {
+    // On refuse les résultats trop larges (bbox > ~2km) ou trop génériques
+    const bbox = result.boundingbox;
+    const diag = bboxDiagMeters(bbox);
+    const klass = result.class || "";
+    const type = result.type || "";
+    const address = result.address || {};
+
+    const tooWide = !Number.isFinite(diag) || diag > 2000; // > 2 km = trop vague
+    const genericPlace =
+      klass === "place" &&
+      /^(city|town|suburb|borough|quarter|neighbourhood|city_block|residential)$/i.test(type);
+
+    // on préfère quand il y a house_number ou building/amenity/shop/leisure
+    const preciseClass = /^(building|amenity|shop|leisure|tourism|railway|highway)$/i.test(klass);
+    const hasNumber = !!(address.house_number || address.building || address.amenity);
+
+    if (genericPlace || tooWide) return false;
+    if (preciseClass || hasNumber) return true;
+
+    // sinon, on accepte si la bbox est petite (< 400 m)
+    return diag < 400;
+  }
+
+  async function geocodeQ(q) {
     const url =
-      "https://nominatim.openstreetmap.org/search?format=jsonv2&countrycodes=be&limit=1&accept-language=fr&q=" +
+      "https://nominatim.openstreetmap.org/search?format=jsonv2&countrycodes=be&limit=3&accept-language=fr&q=" +
       encodeURIComponent(q);
     const r = await fetch(url, { headers: { "Accept-Language": "fr" } });
-    if (!r.ok) throw new Error("geocode HTTP " + r.status);
-    const j = await r.json();
-    if (Array.isArray(j) && j[0]) {
-      return { lat: Number(j[0].lat), lon: Number(j[0].lon) };
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    return r.json();
+  }
+
+  async function geocodeOne(queries) {
+    for (const q of queries) {
+      let list = await geocodeQ(q);
+      // on trie pour favoriser les classes précises
+      list = list.sort((a, b) => {
+        const aScore =
+          (acceptGeo(a) ? 1 : 0) * 10 + (a.importance || 0) + (a.place_rank || 0) / 100;
+        const bScore =
+          (acceptGeo(b) ? 1 : 0) * 10 + (b.importance || 0) + (b.place_rank || 0) / 100;
+        return bScore - aScore;
+      });
+      const best = list.find(acceptGeo);
+      if (best) return { lat: Number(best.lat), lon: Number(best.lon), raw: best };
     }
-    throw new Error("not found");
+    throw new Error("not precise");
   }
 
   async function runGeocodingQueue() {
     if (!cfg.geocode) return;
     let todo = data.filter((d) => !(Number.isFinite(d.lat) && Number.isFinite(d.lng)));
-    let count = 0;
+    let count = 0,
+      kept = 0,
+      skipped = 0;
 
     for (const d of todo) {
       if (count >= cfg.geocodeLimitPerLoad) break;
 
-      // cache lookup
-      if (geoCache[d._query]) {
-        const { lat, lon } = geoCache[d._query];
+      // cache
+      const cacheKeyQ = d._queries.join(" | ");
+      if (geoCache[cacheKeyQ]) {
+        const { lat, lon } = geoCache[cacheKeyQ];
         if (Number.isFinite(lat) && Number.isFinite(lon)) {
           d.lat = lat;
           d.lng = lon;
+          kept++;
           continue;
         }
       }
 
       try {
         await new Promise((ok) => setTimeout(ok, cfg.geocodeDelayMs));
-        const res = await geocodeOne(d._query);
-        if (Number.isFinite(res.lat) && Number.isFinite(res.lon)) {
-          d.lat = res.lat;
-          d.lng = res.lon;
-          geoCache[d._query] = { lat: d.lat, lon: d.lng };
+        const ans = await geocodeOne(d._queries);
+        if (Number.isFinite(ans.lat) && Number.isFinite(ans.lon)) {
+          d.lat = ans.lat;
+          d.lng = ans.lon;
+          geoCache[cacheKeyQ] = { lat: d.lat, lon: d.lng };
           localStorage.setItem(cacheKey, JSON.stringify(geoCache));
           count++;
-          // ajoute au vol si passe les filtres
-          if (matchesFilters(d)) addMarker(d);
+          kept++;
+          if (matchesFilters(d)) addMarker(d); // ajout à la volée
         }
       } catch (e) {
-        // ignore erreurs, on laissera cette ligne sans pin
+        skipped++;
+        // pas de coords fiables → on ignore
       }
     }
 
-    // après une passe, rafraîchit progression et bounds
+    console.info(
+      `[Barathon] Géocodage terminé: ajoutés=${kept} ignorés=${skipped} (cette passe). Cache=${Object.keys(geoCache).length}`
+    );
     updateProgress();
     try {
       const group = L.featureGroup([...clusterTodo.getLayers(), ...clusterDone.getLayers()]);
-      if (group.getLayers().length) map.fitBounds(group.getBounds().pad(0.1));
+      if (group.getLayers().length) map.fitBounds(group.getBounds().pad(0.12));
     } catch (_) {}
   }
 
-  // injecte du cache existant
+  // injecte du cache existant si présent
   data.forEach((d) => {
-    if (!(Number.isFinite(d.lat) && Number.isFinite(d.lng)) && geoCache[d._query]) {
-      d.lat = geoCache[d._query].lat;
-      d.lng = geoCache[d._query].lon;
+    const key = (d._queries || []).join(" | ");
+    if (!(Number.isFinite(d.lat) && Number.isFinite(d.lng)) && geoCache[key]) {
+      d.lat = geoCache[key].lat;
+      d.lng = geoCache[key].lon;
     }
   });
 
-  // premier rendu
+  // rendu initial + géocodage progressif
   refresh();
-
-  // géocode en arrière-plan (progressif)
   runGeocodingQueue();
 })();
