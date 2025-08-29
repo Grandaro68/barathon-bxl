@@ -79,16 +79,17 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
   <!-- App -->
-  <script>
-    window.BARATHON_CONFIG = {
-      dataUrl: 'TON_URL_CSV',
-      city: [50.85045, 4.34878], zoom: 12,
-      geocode: true,              // active le géocodage si coords manquantes
-      geocodeLimitPerLoad: 120,   // nb max d’adresses géocodées par chargement
-      geocodeDelayMs: 600         // délai entre appels (ms)
-    };
-  </script>
-  <script>window.BARATHON_CONFIG = { dataUrl: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vScUea6Z5vXdmRtj27MiZR6r1TXwig5FgFawEm0U6HRw9DFRjmEs8g1S8Q5Lb9Lpa1kZMgVf8ZlFJN7/pub?gid=0&single=true&output=csv', city: [50.85045, 4.34878], zoom: 12 };</script>
-  <script src="./assets/app.js"></script>
+<script>
+  window.BARATHON_CONFIG = {
+    dataUrl: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vScUea6Z5vXdmRtj27MiZR6r1TXwig5FgFawEm0U6HRw9DFRjmEs8g1S8Q5Lb9Lpa1kZMgVf8ZlFJN7/pub?gid=0&single=true&output=csv',
+    city: [50.85045, 4.34878],
+    zoom: 12,
+    geocode: true,            // active le géocodage si coords manquantes
+    geocodeLimitPerLoad: 120, // nb max d’adresses géocodées par chargement
+    geocodeDelayMs: 600       // délai entre appels (ms)
+  };
+</script>
+<script src="./assets/app.js"></script>
 </body>
 </html>
+
