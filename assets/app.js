@@ -425,3 +425,4 @@ document.addEventListener("DOMContentLoaded", () => {
   // Bonus: si tu veux rafraîchir le top périodiquement:
   // setInterval(renderTop, 60_000);
 });
+
