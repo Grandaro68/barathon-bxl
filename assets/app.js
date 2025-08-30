@@ -279,16 +279,33 @@ async function sha256Hex(str) {
 }
 
 /* ------------------ API ------------------ */
+const API_URL = "http://localhost:8080"; // <— en dev
+// Si ton site est servi en https (GitHub Pages), évite le “mixed content” en passant l’API en https (reverse proxy/tunnel).
 
-// URL de ton API Node
-const API_URL = "https://grandaro68.github.io/barathon-bxl/"; 
-// ⚠️ quand tu mettras ton site en ligne, mets ici l’URL publique de l’API
+// Index pour retrouver l'id Postgres à partir du CSV
+// clé = `${name}|${lat}|${lng}` (arrondis pour éviter les micro-différences)
+const BAR_ID_INDEX = new Map();
 
-// Voter pour un bar
-async function voteBar(bar_id) {
+function keyFromBarLike(obj) {
+  const name = (obj.name || obj.Bar || obj.Nom || "").toString().trim();
+  const lat = Math.round((toNum(obj.lat ?? obj.Latitude ?? obj.latitude ?? obj.Lat) || 0) * 1e6);
+  const lng = Math.round((toNum(obj.lng ?? obj.Longitude ?? obj.longitude ?? obj.lon ?? obj.Long) || 0) * 1e6);
+  return `${name}|${lat}|${lng}`;
+}
+
+async function loadBarIndexFromAPI() {
   try {
-    const ua_hash = await sha256Hex(navigator.userAgent);
-    const payload = { bar_id, ua_hash, fp_hash: null };
+    const r = await fetch(`${API_URL}/api/v1/top?limit=100000`); // on détourne: renvoie id, name, quartier (et score)
+    const data = await r.json();
+    if (Array.isArray(data.items)) {
+      data.items.forEach(it => {
+        // on ne reçoit pas lat/lng via /top → ajoutons un endpoint minimal /api/v1/bars (cf. note ci-dessous)
+      });
+    }
+  } catch (e) {
+    console.warn("Impossible de construire l'index depuis /top. Idéalement, ajoute /api/v1/bars côté API.", e);
+  }
+}
 
     // Étape 1 : obtenir une signature
     const sigRes = await fetch(`${API_URL}/api/v1/sign`, {
@@ -370,6 +387,7 @@ document.addEventListener("click", (e) => {
 document.addEventListener("DOMContentLoaded", () => {
   renderTop();
 });
+
 
 
 
