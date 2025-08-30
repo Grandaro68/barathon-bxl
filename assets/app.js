@@ -281,7 +281,7 @@ async function sha256Hex(str) {
 /* ------------------ API ------------------ */
 
 // URL de ton API Node
-const API_URL = "http://localhost:8080"; 
+const API_URL = "https://grandaro68.github.io/barathon-bxl/"; 
 // ⚠️ quand tu mettras ton site en ligne, mets ici l’URL publique de l’API
 
 // Voter pour un bar
@@ -370,6 +370,7 @@ document.addEventListener("click", (e) => {
 document.addEventListener("DOMContentLoaded", () => {
   renderTop();
 });
+
 
 
 
