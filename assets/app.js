@@ -167,36 +167,42 @@ function fitInitialView() {
   map.fitBounds(bounds.pad(0.2));
 }
 
+// Ouvrir le panneau de détails et le remplir
 function openPanel(b) {
-  $panelEmpty.classList.add("hidden");
-  $panelContent.classList.remove("hidden");
+  // 1) afficher le drawer + invalider la taille de la carte (mobile)
+  $panel.classList.add('open');
+  $panelEmpty.classList.add('hidden');
+  $panelContent.classList.remove('hidden');
+  setTimeout(() => map.invalidateSize(), 250);
 
-  $pName.textContent = b.name;
-  $pAddress.textContent = [b.addr, b.cp, b.quartier].filter(Boolean).join(" · ");
+  // 2) contenu texte principal
+  $pName.textContent = b.name || '(Bar sans nom)';
+  $pAddress.textContent = [b.addr, b.cp, b.quartier].filter(Boolean).join(' · ');
 
-  $pTags.innerHTML = "";
+  // 3) tags (prix, consommateur, quartier, pays…)
+  $pTags.innerHTML = '';
   const tags = [];
-  if (b.prix) tags.push(`€${b.prix}`);
+  if (Number.isFinite(b.prix)) tags.push(`€${b.prix}`);
   if (b.consommateur) tags.push(b.consommateur);
   if (b.quartier) tags.push(b.quartier);
-  if (b.pays && b.pays !== "Belgique") tags.push(b.pays);
+  if (b.pays && b.pays !== 'Belgique') tags.push(b.pays);
   tags.forEach((t) => {
-    const span = document.createElement("span");
-    span.className = "chip";
+    const span = document.createElement('span');
+    span.className = 'chip';
     span.textContent = t;
     $pTags.appendChild(span);
   });
 
-  $pRating.textContent = Number.isFinite(b.note) ? b.note.toString() : "–";
-
+  // 4) note, commentaires, statut
+  $pRating.textContent = Number.isFinite(b.note) ? String(b.note) : '–';
   const comments = [b.commentAR, b.commentVB].filter((c) => c && c.trim());
-  $pComment.textContent = comments.length ? comments.join(" · ") : "—";
-  $pVisitedAt.textContent = b.visited ? "Visité ✅" : "À faire 🕑";
+  $pComment.textContent = comments.length ? comments.join(' · ') : '—';
+  $pVisitedAt.textContent = b.visited ? 'Visité ✅' : 'À faire 🕑';
 
-  const q = encodeURIComponent(`${b.name} ${b.addr} ${b.cp} ${b.quartier}`);
-  $pGmaps.href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-    `${b.lat},${b.lng}`
-  )}&query_place_id=${q}`;
+  // 5) lien Google Maps
+  const queryPlace = encodeURIComponent(`${b.name} ${b.addr} ${b.cp} ${b.quartier}`);
+  const queryCoords = encodeURIComponent(`${b.lat},${b.lng}`);
+  $pGmaps.href = `https://www.google.com/maps/search/?api=1&query=${queryCoords}&query_place_id=${queryPlace}`;
 }
 
 /* ------------------ Filters & search ------------------ */
@@ -255,3 +261,4 @@ function updateListAndProgress(currentShown) {
 }
 
 /* ------------------ Fin ------------------ */
+
