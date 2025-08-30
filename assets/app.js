@@ -51,6 +51,14 @@ const cluster = L.markerClusterGroup({
 });
 map.addLayer(cluster);
 
+const $panelToggle = document.getElementById('panelToggle');
+if ($panelToggle) {
+  $panelToggle.addEventListener('click', () => {
+    $panel.classList.toggle('open');
+    setTimeout(() => map.invalidateSize(), 250);
+  });
+}
+
 /* ------------------ UI elements ------------------ */
 const $filterTodo = el("#filterTodo");
 const $filterDone = el("#filterDone");
@@ -261,4 +269,5 @@ function updateListAndProgress(currentShown) {
 }
 
 /* ------------------ Fin ------------------ */
+
 
