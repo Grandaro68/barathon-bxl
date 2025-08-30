@@ -10,6 +10,17 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
   <link rel="stylesheet" href="./assets/style.css?v=5">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Grotesk:wght@400;600;700&display=swap"/>
+  <style>
+    html, body { height: 100%; margin: 0; }
+    .layout { display: grid; grid-template-columns: 1fr 360px; gap: 12px; padding: 12px; }
+    #map { height: calc(100vh - 260px); min-height: 420px; border-radius: 10px; }
+    .panel { max-height: calc(100vh - 260px); overflow: auto; }
+    .hidden { display:none; }
+    .chips .chip { display:inline-block; padding:2px 8px; margin:2px; background:#eee; border-radius:12px; font-size:.85rem; }
+    .top-row { display:grid; grid-template-columns: 40px 1fr 120px 90px; gap:8px; padding:6px 8px; border-bottom:1px solid #eee; }
+    .rank { font-weight:700; }
+    .muted { opacity:.7; }
+  </style>
   <meta name="description" content="Le défi barathon des légendes à Bruxelles : carte des bars à faire et visités, notes & commentaires." />
 </head>
 <body>
@@ -93,6 +104,7 @@
   <script src="./assets/app.js"></script>
 </body>
 </html>
+
 
 
 
