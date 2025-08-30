@@ -1,4 +1,4 @@
-/* assets/app.js — Barathon BXL (robuste pour CSV) */
+/* assets/app.js — Barathon BXL (CSV + API votes & tops) */
 
 /* ------------------ Config ------------------ */
 const CFG = Object.assign(
@@ -51,10 +51,21 @@ const cluster = L.markerClusterGroup({
 });
 map.addLayer(cluster);
 
-const $panelToggle = document.getElementById('panelToggle');
+const $panelToggle = document.getElementById("panelToggle");
+const $panel = el("#panel");
+const $panelEmpty = $panel?.querySelector(".panel-empty");
+const $panelContent = $panel?.querySelector(".panel-content");
+const $pName = el("#pName");
+const $pAddress = el("#pAddress");
+const $pTags = el("#pTags");
+const $pRating = el("#pRating");
+const $pComment = el("#pComment");
+const $pVisitedAt = el("#pVisitedAt");
+const $pGmaps = el("#pGmaps");
+
 if ($panelToggle) {
-  $panelToggle.addEventListener('click', () => {
-    $panel.classList.toggle('open');
+  $panelToggle.addEventListener("click", () => {
+    $panel.classList.toggle("open");
     setTimeout(() => map.invalidateSize(), 250);
   });
 }
@@ -68,22 +79,109 @@ const $search = el("#search");
 const $counter = el("#counter");
 const $barFill = el("#barFill");
 
-const $panel = el("#panel");
-const $panelEmpty = $panel.querySelector(".panel-empty");
-const $panelContent = $panel.querySelector(".panel-content");
-const $pName = el("#pName");
-const $pAddress = el("#pAddress");
-const $pTags = el("#pTags");
-const $pRating = el("#pRating");
-const $pComment = el("#pComment");
-const $pVisitedAt = el("#pVisitedAt");
-const $pGmaps = el("#pGmaps");
-
 /* ------------------ State ------------------ */
-let ALL_ROWS = [];         // toutes les lignes du CSV (même sans coords)
-let BARS = [];             // lignes mappées (avec/without coords)
+let ALL_ROWS = []; // toutes les lignes du CSV (même sans coords)
+let BARS = []; // lignes mappées (avec/without coords)
 let BARS_WITH_COORDS = []; // seulement celles avec coords
-let MARKERS = [];          // { marker, data }
+let MARKERS = []; // { marker, data }
+
+/* ------------------ API (NEW) ------------------ */
+const API_URL = "http://localhost:8080"; // en dev; en prod: ton URL d'API HTTPS
+
+// Index pour retrouver l'id Postgres depuis le CSV (clé = name|lat|lng arrondis)
+const BAR_ID_INDEX = new Map();
+
+function keyFromBarLike(obj) {
+  const name =
+    (obj.name || obj.Bar || obj.Nom || "").toString().trim();
+  const lat = Math.round(
+    (toNum(obj.lat ?? obj.Latitude ?? obj.latitude ?? obj.Lat) || 0) * 1e6
+  );
+  const lng = Math.round(
+    (toNum(
+      obj.lng ?? obj.Longitude ?? obj.longitude ?? obj.lon ?? obj.Long
+    ) || 0) * 1e6
+  );
+  return `${name}|${lat}|${lng}`;
+}
+
+async function loadBarIndexFromAPI() {
+  try {
+    const r = await fetch(`${API_URL}/api/v1/bars`);
+    const data = await r.json();
+    if (Array.isArray(data.items)) {
+      data.items.forEach((it) => {
+        const lat = Math.round(Number(it.latitude || 0) * 1e6);
+        const lng = Math.round(Number(it.longitude || 0) * 1e6);
+        const key = `${(it.name || "").trim()}|${lat}|${lng}`;
+        BAR_ID_INDEX.set(key, it.id);
+      });
+      console.log(`Index bars chargé: ${BAR_ID_INDEX.size} entrées`);
+    }
+  } catch (e) {
+    console.error("loadBarIndexFromAPI failed", e);
+  }
+}
+
+// Hash SHA-256 en hex (pour ua_hash)
+async function sha256Hex(str) {
+  const buf = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(str)
+  );
+  return [...new Uint8Array(buf)]
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+function toast(msg) {
+  // Simple fallback ; remplace par un vrai toast si tu as une lib UI
+  alert(msg);
+}
+
+function resolveBarId(b) {
+  const key = keyFromBarLike({ name: b.name, lat: b.lat, lng: b.lng });
+  return BAR_ID_INDEX.get(key);
+}
+
+async function voteBarId(bar_id) {
+  try {
+    const ua_hash = await sha256Hex(navigator.userAgent);
+    const payload = { bar_id, ua_hash, fp_hash: null };
+
+    const sigRes = await fetch(`${API_URL}/api/v1/sign`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    }).then((r) => r.json());
+
+    const voteRes = await fetch(`${API_URL}/api/v1/vote`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...payload, signature: sigRes.signature }),
+    }).then((r) => r.json());
+
+    if (voteRes.ok) {
+      toast("Tchin ! 🍻 Ton vote est compté.");
+    } else if (voteRes.duplicate) {
+      toast("Tu as déjà trinqué pour ce bar aujourd'hui 😉");
+    } else if (voteRes.error === "too_many_votes") {
+      toast("Trop de votes depuis ton appareil, reviens plus tard 🍺");
+    } else {
+      toast("Oups, une erreur est survenue.");
+    }
+  } catch (err) {
+    console.error("Erreur vote:", err);
+    toast("Erreur de connexion à l’API.");
+  }
+}
+
+async function fetchTop(quartier = null, limit = 10) {
+  const qs = new URLSearchParams({ limit });
+  if (quartier) qs.set("quartier", quartier);
+  const res = await fetch(`${API_URL}/api/v1/top?${qs.toString()}`);
+  return res.json();
+}
 
 /* ------------------ Load CSV ------------------ */
 Papa.parse(CFG.dataUrl + (CFG.dataUrl.includes("?") ? "&v=3" : "?v=3"), {
@@ -98,13 +196,14 @@ Papa.parse(CFG.dataUrl + (CFG.dataUrl.includes("?") ? "&v=3" : "?v=3"), {
   },
 });
 
-function initApp(rows) {
+async function initApp(rows) {
+  // Charger l'index des bars (id/name/lat/lng) depuis l'API
+  await loadBarIndexFromAPI();
+
   ALL_ROWS = rows;
   // Mapper CSV -> modèle interne
   BARS = rows.map((r) => {
-    const lat = toNum(
-      pick(r, ["Latitude", "latitude", "lat", "Lat"])
-    );
+    const lat = toNum(pick(r, ["Latitude", "latitude", "lat", "Lat"]));
     const lng = toNum(
       pick(r, ["Longitude", "longitude", "lng", "lon", "Long"])
     );
@@ -142,13 +241,18 @@ function initApp(rows) {
   });
 
   // On ne crée des marqueurs que pour les bars avec coords
-  BARS_WITH_COORDS = BARS.filter((b) => Number.isFinite(b.lat) && Number.isFinite(b.lng));
-  console.log(`Bars valides (avec coords): ${BARS_WITH_COORDS.length} / ${BARS.length}`);
+  BARS_WITH_COORDS = BARS.filter(
+    (b) => Number.isFinite(b.lat) && Number.isFinite(b.lng)
+  );
+  console.log(
+    `Bars valides (avec coords): ${BARS_WITH_COORDS.length} / ${BARS.length}`
+  );
 
   buildMarkers();
   fitInitialView();
   bindFilters();
   updateListAndProgress();
+  renderTop(); // charge le top général dans #top-list si présent
 }
 
 /* ------------------ Build markers ------------------ */
@@ -175,62 +279,88 @@ function fitInitialView() {
   map.fitBounds(bounds.pad(0.2));
 }
 
-// Ouvrir le panneau de détails et le remplir
+// Ouvrir le panneau de détails et le remplir (+ bouton Tchin !)
 function openPanel(b) {
   // 1) afficher le drawer + invalider la taille de la carte (mobile)
-  $panel.classList.add('open');
-  $panelEmpty.classList.add('hidden');
-  $panelContent.classList.remove('hidden');
+  $panel.classList.add("open");
+  $panelEmpty.classList.add("hidden");
+  $panelContent.classList.remove("hidden");
   setTimeout(() => map.invalidateSize(), 250);
 
   // 2) contenu texte principal
-  $pName.textContent = b.name || '(Bar sans nom)';
-  $pAddress.textContent = [b.addr, b.cp, b.quartier].filter(Boolean).join(' · ');
+  $pName.textContent = b.name || "(Bar sans nom)";
+  $pAddress.textContent = [b.addr, b.cp, b.quartier]
+    .filter(Boolean)
+    .join(" · ");
 
   // 3) tags (prix, consommateur, quartier, pays…)
-  $pTags.innerHTML = '';
+  $pTags.innerHTML = "";
   const tags = [];
   if (Number.isFinite(b.prix)) tags.push(`€${b.prix}`);
   if (b.consommateur) tags.push(b.consommateur);
   if (b.quartier) tags.push(b.quartier);
-  if (b.pays && b.pays !== 'Belgique') tags.push(b.pays);
+  if (b.pays && b.pays !== "Belgique") tags.push(b.pays);
   tags.forEach((t) => {
-    const span = document.createElement('span');
-    span.className = 'chip';
+    const span = document.createElement("span");
+    span.className = "chip";
     span.textContent = t;
     $pTags.appendChild(span);
   });
 
   // 4) note, commentaires, statut
-  $pRating.textContent = Number.isFinite(b.note) ? String(b.note) : '–';
+  $pRating.textContent = Number.isFinite(b.note) ? String(b.note) : "–";
   const comments = [b.commentAR, b.commentVB].filter((c) => c && c.trim());
-  $pComment.textContent = comments.length ? comments.join(' · ') : '—';
-  $pVisitedAt.textContent = b.visited ? 'Visité ✅' : 'À faire 🕑';
+  $pComment.textContent = comments.length ? comments.join(" · ") : "—";
+  $pVisitedAt.textContent = b.visited ? "Visité ✅" : "À faire 🕑";
 
   // 5) lien Google Maps
   const queryPlace = encodeURIComponent(`${b.name} ${b.addr} ${b.cp} ${b.quartier}`);
   const queryCoords = encodeURIComponent(`${b.lat},${b.lng}`);
   $pGmaps.href = `https://www.google.com/maps/search/?api=1&query=${queryCoords}&query_place_id=${queryPlace}`;
+
+  // 6) bouton Tchin ! (créé/maj à chaque ouverture)
+  let btn = $panelContent.querySelector(".tchin-btn");
+  if (!btn) {
+    btn = document.createElement("button");
+    btn.className = "tchin-btn";
+    btn.style.marginTop = "8px";
+    $panelContent.appendChild(btn);
+  }
+  btn.textContent = "Tchin ! 🍻";
+
+  const barId = resolveBarId(b);
+  btn.disabled = !barId;
+  btn.title = barId
+    ? "Fais grimper ce bar dans le Top !"
+    : "Bar non relié à la base (id introuvable)";
+
+  btn.onclick = () => {
+    if (!barId) {
+      toast("Impossible d'identifier ce bar côté serveur (pas d'id).");
+      return;
+    }
+    voteBarId(barId);
+  };
 }
 
 /* ------------------ Filters & search ------------------ */
 function bindFilters() {
-  $ratingVal.textContent = $minRating.value;
+  if ($ratingVal && $minRating) $ratingVal.textContent = $minRating.value;
 
-  $filterTodo.addEventListener("change", applyFilters);
-  $filterDone.addEventListener("change", applyFilters);
-  $minRating.addEventListener("input", () => {
+  $filterTodo?.addEventListener("change", applyFilters);
+  $filterDone?.addEventListener("change", applyFilters);
+  $minRating?.addEventListener("input", () => {
     $ratingVal.textContent = $minRating.value;
     applyFilters();
   });
-  $search.addEventListener("input", applyFilters);
+  $search?.addEventListener("input", applyFilters);
 }
 
 function applyFilters() {
-  const showTodo = $filterTodo.checked;
-  const showDone = $filterDone.checked;
-  const minRating = toNum($minRating.value) || 0;
-  const q = ($search.value || "").toLowerCase().trim();
+  const showTodo = $filterTodo?.checked ?? true;
+  const showDone = $filterDone?.checked ?? true;
+  const minRating = toNum($minRating?.value) || 0;
+  const q = ($search?.value || "").toLowerCase().trim();
 
   cluster.clearLayers();
 
@@ -239,7 +369,9 @@ function applyFilters() {
     const isDone = !!data.visited;
     const passStatus = (isDone && showDone) || (!isDone && showTodo);
     const passRating =
-      !Number.isFinite(minRating) || !Number.isFinite(data.note) ? true : data.note >= minRating;
+      !Number.isFinite(minRating) || !Number.isFinite(data.note)
+        ? true
+        : data.note >= minRating;
     const hay = `${data.name} ${data.addr} ${data.quartier} ${data.consommateur}`.toLowerCase();
     const passSearch = q ? hay.includes(q) : true;
 
@@ -253,142 +385,43 @@ function applyFilters() {
 }
 
 function updateListAndProgress(currentShown) {
-  // compteur “visités” = nb de bars (avec coords) où visited = true
   const totalWithCoords = BARS_WITH_COORDS.length;
   const visitedCount = BARS_WITH_COORDS.filter((b) => b.visited).length;
 
-  $counter.textContent = `${visitedCount} / ${totalWithCoords} bars visités`;
+  if ($counter) $counter.textContent = `${visitedCount} / ${totalWithCoords} bars visités`;
 
   const pct = totalWithCoords ? Math.round((visitedCount / totalWithCoords) * 100) : 0;
-  $barFill.style.width = `${pct}%`;
-
-  if (typeof currentShown === "number") {
-    // Rien à faire ici pour la liste, mais tu peux afficher “X pins visibles”
-    // console.log(`Pins visibles: ${currentShown}`);
-  }
+  if ($barFill) $barFill.style.width = `${pct}%`;
 }
 
-/* ------------------ Tchin! ------------------ */
-
-/* ------------------ Helpers ------------------ */
-
-// Hash SHA-256 en hex (pour ua_hash)
-async function sha256Hex(str) {
-  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
-  return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, "0")).join("");
-}
-
-/* ------------------ API ------------------ */
-const API_URL = "http://localhost:8080"; // <— en dev
-// Si ton site est servi en https (GitHub Pages), évite le “mixed content” en passant l’API en https (reverse proxy/tunnel).
-
-// Index pour retrouver l'id Postgres à partir du CSV
-// clé = `${name}|${lat}|${lng}` (arrondis pour éviter les micro-différences)
-const BAR_ID_INDEX = new Map();
-
-function keyFromBarLike(obj) {
-  const name = (obj.name || obj.Bar || obj.Nom || "").toString().trim();
-  const lat = Math.round((toNum(obj.lat ?? obj.Latitude ?? obj.latitude ?? obj.Lat) || 0) * 1e6);
-  const lng = Math.round((toNum(obj.lng ?? obj.Longitude ?? obj.longitude ?? obj.lon ?? obj.Long) || 0) * 1e6);
-  return `${name}|${lat}|${lng}`;
-}
-
-async function loadBarIndexFromAPI() {
-  try {
-    const r = await fetch(`${API_URL}/api/v1/top?limit=100000`); // on détourne: renvoie id, name, quartier (et score)
-    const data = await r.json();
-    if (Array.isArray(data.items)) {
-      data.items.forEach(it => {
-        // on ne reçoit pas lat/lng via /top → ajoutons un endpoint minimal /api/v1/bars (cf. note ci-dessous)
-      });
-    }
-  } catch (e) {
-    console.warn("Impossible de construire l'index depuis /top. Idéalement, ajoute /api/v1/bars côté API.", e);
-  }
-}
-
-    // Étape 1 : obtenir une signature
-    const sigRes = await fetch(`${API_URL}/api/v1/sign`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    }).then(r => r.json());
-
-    // Étape 2 : envoyer le vote
-    const voteRes = await fetch(`${API_URL}/api/v1/vote`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...payload, signature: sigRes.signature }),
-    }).then(r => r.json());
-
-    if (voteRes.ok) {
-      alert("Tchin ! 🍻 Ton vote est compté.");
-    } else if (voteRes.duplicate) {
-      alert("Tu as déjà trinqué pour ce bar aujourd'hui 😉");
-    } else if (voteRes.error === "too_many_votes") {
-      alert("Trop de votes depuis ton appareil, reviens plus tard 🍺");
-    } else {
-      alert("Oups, une erreur est survenue.");
-    }
-  } catch (err) {
-    console.error("Erreur vote:", err);
-    alert("Erreur de connexion à l’API.");
-  }
-}
-
-// Récupérer le top
-async function fetchTop(quartier = null, limit = 10) {
-  const qs = new URLSearchParams({ limit });
-  if (quartier) qs.set("quartier", quartier);
-  const res = await fetch(`${API_URL}/api/v1/top?${qs.toString()}`);
-  return res.json();
-}
-
-/* ------------------ Intégration ------------------ */
-
-// Exemple : affichage du top 10 dans un <div id="top-list">
+/* ------------------ Top 10 display (simple) ------------------ */
 async function renderTop() {
-  const data = await fetchTop(null, 10); // top général
   const container = document.getElementById("top-list");
-  container.innerHTML = "";
-
-  data.items.forEach((bar, i) => {
-    const row = document.createElement("div");
-    row.className = "top-row";
-    row.innerHTML = `
-      <span class="rank">#${i + 1}</span>
-      <span class="name">${bar.name}</span>
-      <span class="quartier">${bar.quartier || ""}</span>
-      <span class="score">${bar.score_window} ❤️</span>
-    `;
-    container.appendChild(row);
-  });
+  if (!container) return;
+  try {
+    const data = await fetchTop(null, 10); // top général
+    container.innerHTML = "";
+    (data.items || []).forEach((bar, i) => {
+      const row = document.createElement("div");
+      row.className = "top-row";
+      row.innerHTML = `
+        <span class="rank">#${i + 1}</span>
+        <span class="name">${bar.name}</span>
+        <span class="quartier">${bar.quartier || ""}</span>
+        <span class="score">${bar.score_window} ❤️</span>
+      `;
+      container.appendChild(row);
+    });
+  } catch (e) {
+    console.error("renderTop failed", e);
+  }
 }
 
-// Exemple : intégrer un bouton "Tchin !" dans tes popups Leaflet
-function popupHtml(bar) {
-  return `
-    <div class="popup">
-      <div class="title">${bar.name}</div>
-      <div class="meta">${bar.quartier || ""}</div>
-      <button class="tchin-btn" data-barid="${bar.id}">Tchin ! 🍻</button>
-    </div>`;
-}
-
-// Event global pour gérer les clics "Tchin !"
-document.addEventListener("click", (e) => {
-  const btn = e.target.closest(".tchin-btn");
-  if (!btn) return;
-  const id = Number(btn.dataset.barid);
-  voteBar(id);
-});
-
-// Charger le top 10 au démarrage
+/* ------------------ Boot ------------------ */
 document.addEventListener("DOMContentLoaded", () => {
-  renderTop();
+  // CSV -> markers + panneau
+  // (Papa.parse est déjà lancé plus haut)
+
+  // Bonus: si tu veux rafraîchir le top périodiquement:
+  // setInterval(renderTop, 60_000);
 });
-
-
-
-
-
