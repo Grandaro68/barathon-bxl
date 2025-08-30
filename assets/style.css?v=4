@@ -127,43 +127,64 @@ input[type="range"]{accent-color:var(--accent)}
 #barFill{height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--accent-2));box-shadow:0 0 12px rgba(0,245,212,.35) inset;transition:width .35s ease}
 
 /* ================== LAYOUT ================== */
-.layout{display:grid;grid-template-columns: minmax(0,1fr) 360px;gap:0}
-@media (max-width: 980px){ .layout{grid-template-columns: 1fr} .panel{order:-1} }
-
-/* hauteur par défaut desktop */
-#map { height: 78vh; }
-
-/* si le navigateur supporte l’unité 100dvh (fiable mobile) */
-@supports (height: 100dvh) {
-  #map { height: 78dvh; }
+.layout{
+  display:grid;
+  grid-template-columns: minmax(0,1fr) 360px;
+  gap:0;
 }
-
-/* layout mobile : 1 colonne + panneau en bas façon “drawer” */
 @media (max-width: 980px){
   .layout{ grid-template-columns: 1fr; }
+  .panel{ order:-1; } /* fallback si le drawer est désactivé */
+}
 
+/* hauteur de carte */
+#map { height: 78vh; }
+@supports (height: 100dvh) { #map { height: 78dvh; } }
+
+/* ================== PANEL (base desktop) ================== */
+/* (scopé pour ne pas écraser la version mobile) */
+.layout > .panel{
+  background:var(--panel);
+  border-left:2px solid rgba(0,245,212,.25);
+  padding:16px;
+}
+.layout > .panel h3{
+  font-family:'Bebas Neue', sans-serif;
+  color:var(--accent);
+  margin:0 0 .3rem 0;
+  letter-spacing:.5px;
+}
+
+/* ================== DRAWER MOBILE ================== */
+@media (max-width: 980px){
   /* carte occupe bien le viewport restant */
   #map { height: 66vh; }
-  @supports (height: 100dvh) {
-    #map { height: 66dvh; }
-  }
+  @supports (height: 100dvh) { #map { height: 66dvh; } }
 
-  /* panneau coulissant en bas */
+  /* Drawer */
   .panel{
     position: fixed;
     left: 0; right: 0; bottom: 0;
-    max-height: 60dvh;           /* 60% de la hauteur visible */
-    transform: translateY(88%);  /* replié par défaut */
+    max-height: 60dvh;
+    transform: translateY(88%);
     transition: transform .25s ease;
     border-left: none;
     border-top: 2px solid rgba(0,245,212,.25);
     border-radius: 16px 16px 0 0;
     box-shadow: 0 -12px 28px rgba(0,0,0,.45);
-    z-index: 500; /* au-dessus de la carte */
+    z-index: 500;
+    background: var(--panel);
+    padding:16px;
+
+    /* fluidité & gestes */
+    will-change: transform;
+    touch-action: pan-y;
+    -webkit-overflow-scrolling: touch;
+    overflow:auto;
   }
   .panel.open { transform: translateY(0); }
 
-  /* poignée d’ouverture (optionnel) */
+  /* poignée */
   .panel::before{
     content:"";
     display:block;
@@ -175,57 +196,34 @@ input[type="range"]{accent-color:var(--accent)}
 /* petits plus mobile */
 * { -webkit-tap-highlight-color: transparent; }
 
-/* Popup Leaflet néon */
-.leaflet-popup-content-wrapper{background:#0b0b0b;color:#fff;border:2px solid var(--accent)}
-.leaflet-popup-tip{background:#0b0b0b;border:2px solid var(--accent)}
+/* ================== POPUP LEAFLET ================== */
+.leaflet-popup-content-wrapper{
+  background:#0b0b0b;color:#fff;border:2px solid var(--accent);
+}
+.leaflet-popup-tip{
+  background:#0b0b0b;border:2px solid var(--accent);
+}
 
-/* ================== PANEL ================== */
-.panel{
-  background:var(--panel);
-  border-left:2px solid rgba(0,245,212,.25);
-  padding:16px;
-}
-.panel h3{
-  font-family:'Bebas Neue', sans-serif;
-  color:var(--accent);
-  margin:0 0 .3rem 0;
-  letter-spacing:.5px;
-}
+/* ================== TAGS & BOUTONS ================== */
 .muted{color:#9aa6ab}
-
 .chips{margin:.4rem 0}
 .chip{
-  display:inline-block;
-  padding:.18rem .55rem;
-  margin:.15rem;
-  border-radius:999px;
-  background:var(--accent);
-  color:#0a0a0a;
-  font-weight:600;
-  font-size:.82rem;
+  display:inline-block;padding:.18rem .55rem;margin:.15rem;
+  border-radius:999px;background:var(--accent);color:#0a0a0a;
+  font-weight:600;font-size:.82rem;
 }
 
 .btn{
-  display:inline-block;
-  padding:.5rem .9rem;
-  border-radius:12px;
-  background:transparent;
-  color:#fff;
-  border:2px solid var(--accent);
-  text-decoration:none;
-  transition:.2s ease;
+  display:inline-block;padding:.5rem .9rem;border-radius:12px;
+  background:transparent;color:#fff;border:2px solid var(--accent);
+  text-decoration:none;transition:.2s ease;
 }
 .btn:hover{background:var(--accent); color:#0a0a0a; box-shadow:0 0 16px var(--accent)}
 
-/* =========================== BOUTON PULSANT =================== */
-
-.top-nav .btn{
-  animation: btnPulse 3s ease-in-out infinite;
-}
+/* ================== BOUTON PULSANT =================== */
+.top-nav .btn{ animation: btnPulse 3s ease-in-out infinite; }
 @keyframes btnPulse{
-  0%  { box-shadow:0 0 0 rgba(0,245,212,0) }
-  60% { box-shadow:0 0 14px rgba(0,245,212,.35) }
+  0%{ box-shadow:0 0 0 rgba(0,245,212,0) }
+  60%{ box-shadow:0 0 14px rgba(0,245,212,.35) }
   100%{ box-shadow:0 0 0 rgba(0,245,212,0) }
 }
-
-
