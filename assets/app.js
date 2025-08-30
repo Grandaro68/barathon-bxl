@@ -268,6 +268,108 @@ function updateListAndProgress(currentShown) {
   }
 }
 
-/* ------------------ Fin ------------------ */
+/* ------------------ Tchin! ------------------ */
+
+/* ------------------ Helpers ------------------ */
+
+// Hash SHA-256 en hex (pour ua_hash)
+async function sha256Hex(str) {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
+  return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, "0")).join("");
+}
+
+/* ------------------ API ------------------ */
+
+// URL de ton API Node
+const API_URL = "http://localhost:8080"; 
+// ⚠️ quand tu mettras ton site en ligne, mets ici l’URL publique de l’API
+
+// Voter pour un bar
+async function voteBar(bar_id) {
+  try {
+    const ua_hash = await sha256Hex(navigator.userAgent);
+    const payload = { bar_id, ua_hash, fp_hash: null };
+
+    // Étape 1 : obtenir une signature
+    const sigRes = await fetch(`${API_URL}/api/v1/sign`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    }).then(r => r.json());
+
+    // Étape 2 : envoyer le vote
+    const voteRes = await fetch(`${API_URL}/api/v1/vote`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...payload, signature: sigRes.signature }),
+    }).then(r => r.json());
+
+    if (voteRes.ok) {
+      alert("Tchin ! 🍻 Ton vote est compté.");
+    } else if (voteRes.duplicate) {
+      alert("Tu as déjà trinqué pour ce bar aujourd'hui 😉");
+    } else if (voteRes.error === "too_many_votes") {
+      alert("Trop de votes depuis ton appareil, reviens plus tard 🍺");
+    } else {
+      alert("Oups, une erreur est survenue.");
+    }
+  } catch (err) {
+    console.error("Erreur vote:", err);
+    alert("Erreur de connexion à l’API.");
+  }
+}
+
+// Récupérer le top
+async function fetchTop(quartier = null, limit = 10) {
+  const qs = new URLSearchParams({ limit });
+  if (quartier) qs.set("quartier", quartier);
+  const res = await fetch(`${API_URL}/api/v1/top?${qs.toString()}`);
+  return res.json();
+}
+
+/* ------------------ Intégration ------------------ */
+
+// Exemple : affichage du top 10 dans un <div id="top-list">
+async function renderTop() {
+  const data = await fetchTop(null, 10); // top général
+  const container = document.getElementById("top-list");
+  container.innerHTML = "";
+
+  data.items.forEach((bar, i) => {
+    const row = document.createElement("div");
+    row.className = "top-row";
+    row.innerHTML = `
+      <span class="rank">#${i + 1}</span>
+      <span class="name">${bar.name}</span>
+      <span class="quartier">${bar.quartier || ""}</span>
+      <span class="score">${bar.score_window} ❤️</span>
+    `;
+    container.appendChild(row);
+  });
+}
+
+// Exemple : intégrer un bouton "Tchin !" dans tes popups Leaflet
+function popupHtml(bar) {
+  return `
+    <div class="popup">
+      <div class="title">${bar.name}</div>
+      <div class="meta">${bar.quartier || ""}</div>
+      <button class="tchin-btn" data-barid="${bar.id}">Tchin ! 🍻</button>
+    </div>`;
+}
+
+// Event global pour gérer les clics "Tchin !"
+document.addEventListener("click", (e) => {
+  const btn = e.target.closest(".tchin-btn");
+  if (!btn) return;
+  const id = Number(btn.dataset.barid);
+  voteBar(id);
+});
+
+// Charger le top 10 au démarrage
+document.addEventListener("DOMContentLoaded", () => {
+  renderTop();
+});
+
 
 
